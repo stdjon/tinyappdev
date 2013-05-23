@@ -1,0 +1,103 @@
+#!/bin/sh
+
+#-------------------------------------------------------------------------------
+# hacky little configure script.
+
+
+#-------------------------------------------------------------------------------
+# Platform-specific configuration.
+
+bsd_config()
+{
+	echo export LD_LIBRARY_PATH=$cwd/bin/debug >> dep/platform.mak;
+	echo export PLATFORM=BSD >> dep/platform.mak;
+}
+
+
+linux_config()
+{
+	echo export LD_LIBRARY_PATH=$cwd/bin/debug >> dep/platform.mak;
+	echo export PLATFORM=LINUX >> dep/platform.mak;
+}
+
+
+macosx_config()
+{
+	echo export DYLD_LIBRARY_PATH=$cwd/bin/debug >> dep/platform.mak;
+	echo export PLATFORM=MACOSX >> dep/platform.mak;
+}
+
+
+win32_config()
+{
+	# massage the path into a win32 one
+	win32_cwd=`echo $cwd | sed -e'
+		s/^\/\([a-zA-Z]\)/\1:/
+		s/\//\\\\/g'`
+	
+	echo export PLATFORM=WIN32 > dep/platform.mak;
+	echo "@set PATH=%PATH%;$win32_cwd\\bin\\debug" > dep/include.bat;
+}
+
+
+#-------------------------------------------------------------------------------
+# Attempt to discover platform.
+
+my_ostype=$OSTYPE
+
+
+if [ -z $my_ostype ]; then
+	my_ostype=$OS
+fi
+
+
+# we're not having much luck, are we?
+if [ -z $my_ostype ]; then
+    my_ostype=`uname`
+fi
+
+
+if [ -z $my_ostype ]; then
+	echo Error: platform not recognized.
+	exit 1
+fi
+
+
+my_platform=`echo $my_ostype | sed -e'
+	s/.*\(freebsd\).*/\1/
+	s/.*\(BSD\).*/\1/
+	s/.*\(darwin\).*/\1/
+	s/.*\(linux\).*/\1/
+	s/.*\(msys\).*/\1/
+	s/.*\(Windows_NT\).*/\1/' | tr A-Z a-z`
+
+
+echo "Configuring for '$my_platform'."
+
+
+mkdir -p dep
+cwd=`pwd`;
+
+
+case $my_platform in
+
+	bsd) bsd_config;;
+	
+	darwin) macosx_config;;
+
+	freebsd) bsd_config;;
+		
+	linux) linux_config;;
+	
+	msys) win32_config;;
+	
+	windows_nt) win32_config;;
+	
+	*)
+		echo Error: unsupported platform
+		exit 1
+		;;
+esac
+
+
+echo Ready to make.
