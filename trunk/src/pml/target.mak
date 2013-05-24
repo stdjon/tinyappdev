@@ -5,3 +5,6 @@ SOURCE:= \
 	malloc.c \
 	# SOURCE
 
+# publish pml headers to include/
+$(call make_include,pml)
+
