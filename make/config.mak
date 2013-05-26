@@ -272,14 +272,12 @@ WIN32_CFLAGS:= \
 	-D_WIN32_WINNT=0x0501 \
 	# WIN32_CFLAGS
 
-#TODO FT2_BUILD_LIBRARY only needed when building freetype
-#TODO LOAD_BMP used by SDL_image, there are other options too,
-#     maybe we want to put them in a header or something?
 DEFAULT_CFLAGS:= \
 	-Isrc \
 	-Isr3 \
 	-Iobj \
 	-D$(PLATFORM)_S=1 \
+	-DTFR_USE_MINICONF_S \
 	# DEFAULT_CFLAGS
 
 # NB: CFLAGS is now using = instead of := to allow the experimental
