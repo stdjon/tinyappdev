@@ -316,7 +316,6 @@ TFR_Bool TFR_args(int *argc, char ***argv)
         cfgSTRING_M("argfile", "A", 0, "Read additional arguments from <filename>"),
         cfgSTRING_M("focus", "f", 0, "Run tests on one suite only."),
         cfgINT_M("verbosity", "v", 0, "Verbosity (output trace) level. Higher for more info."),
-        cfgSWITCH_M("slow", "s", "Use open()/close() for each test rather than each suite"),
         cfgEND_M
     };
 
@@ -334,7 +333,6 @@ TFR_Bool TFR_args(int *argc, char ***argv)
 
             TFR_test_S.verbosity = cfg_int("verbosity");
             TFR_test_S.focus = cfg_string("focus");
-            TFR_test_S.slow = cfg_switch("slow");
             TFR_test_S.help = cfg_switch("help") || cfg_switch("?");
         }
 
