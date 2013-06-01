@@ -85,16 +85,16 @@
 
 
 /*----------------------------------------------------------------------------*/
-/* API namespace - contains every api and type in C++, prepended with a trailing
- * underscore in C.
- * (e.g. C++ pml::malloc() -> pml_malloc() in C)
+/* API namespace - contains every type and enum value in C++
+ * (e.g. pml::DebugHook, pml::MALLOC).
+ * Also prepended to enum values in C (e.g. pml_MALLOC).
+ * Prepended to functions in both C/C++ (e.g. pml_malloc()).
  */
 #ifndef PML_API_NAMESPACE
 #define PML_API_NAMESPACE pml
 #endif/*PML_API_NAMESPACE*/
 
-/* Type namespace - unused in C++, prepended to types in C
- * (e.g. C++ pml::DebugHook -> PmlDebugHook in C)
+/* Type namespace - prepended to types in C (e.g. PmlDebugHook).
  */
 #ifndef PML_TYPE_NAMESPACE
 #define PML_TYPE_NAMESPACE Pml
@@ -134,7 +134,9 @@
 /*----------------------------------------------------------------------------*/
 /* Cross-language compatibility */
 
-/** API (function) names. */
+/** API (function) names. These wil have the PML_API_NAMESPACE prepended in both
+ *  languages.
+ */
 #define PML_APINAME(NAME_) pml_APINAME_0(PML_API_NAMESPACE, NAME_)
 
 /** API declaration. */
