@@ -1,7 +1,8 @@
 #include "pml/malloc.h"
 
+#include <stdio.h>
 #include <stdint.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <memory.h>
 #include <assert.h>
 
@@ -55,7 +56,9 @@ static PML_TYPE(FreeHook) s_pml_free_hook = pml_free_;
 static PML_TYPE(CallocHook) s_pml_calloc_hook = pml_calloc_;
 static PML_TYPE(ReallocHook) s_pml_realloc_hook = pml_realloc_;
 static PML_TYPE(DebugHook) s_pml_debug_hook = 0;
+#ifdef PML_ASSERT_HOOK_S
 static PML_TYPE(AssertHook) s_pml_assert_hook = pml_assert_;
+#endif//PML_ASSERT_HOOK_S
 
 
 bool PML_APINAME(set_debug_hook)(PML_TYPE(DebugHook) hook) {
@@ -67,7 +70,9 @@ bool PML_APINAME(set_debug_hook)(PML_TYPE(DebugHook) hook) {
 
 bool PML_APINAME(set_assert_hook)(PML_TYPE(AssertHook) hook) {
 
+#ifdef PML_ASSERT_HOOK_S
     s_pml_assert_hook = hook;
+#endif//PML_ASSERT_HOOK_S
     return true;
 }
 
@@ -142,7 +147,7 @@ void PML_APINAME(debug_hook)(PML_TYPE(DebugHookType) type,
 /*----------------------------------------------------------------------------*/
 /* Assert hook handler */
 
-#ifdef PML_DEBUG_HOOK_S
+#ifdef PML_ASSERT_HOOK_S
 void PML_APINAME(assert_hook)(bool test, const char *expr,
     const char *file, size_t line) {
 
@@ -156,7 +161,7 @@ void PML_APINAME(assert_hook)(bool test, const char *expr,
         s_pml_assert_hook(&info);
     }
 }
-#endif/*PML_DEBUG_HOOK_S*/
+#endif/*PML_ASSERT_HOOK_S*/
 
 
 /*----------------------------------------------------------------------------*/
