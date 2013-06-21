@@ -257,31 +257,33 @@ struct NewResult {
     }
 
     template<typename P0>
-    T *operator()(P0 p0) {
+    T *operator()(PML_NEW_PARAM(P0) p0) {
 
         PML_NEW_OPERATOR_IMPL((p0));
     }
 
     template<typename P0, typename P1>
-    T *operator()(P0 p0, P1 p1) {
+    T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1) {
 
         PML_NEW_OPERATOR_IMPL((p0, p1));
     }
 
     template<typename P0, typename P1, typename P2>
-    T *operator()(P0 p0, P1 p1, P2 p2) {
+    T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1, PML_NEW_PARAM(P2) p2) {
 
         PML_NEW_OPERATOR_IMPL((p0, p1, p2));
     }
 
     template<typename P0, typename P1, typename P2, typename P3>
-    T *operator()(P0 p0, P1 p1, P2 p2, P3 p3) {
+    T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1,
+        PML_NEW_PARAM(P2) p2, PML_NEW_PARAM(P3) p3) {
 
         PML_NEW_OPERATOR_IMPL((p0, p1, p2, p3));
     }
 
     template<typename P0, typename P1, typename P2, typename P3, typename P4>
-    T *operator()(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4) {
+    T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1,
+        PML_NEW_PARAM(P2) p2, PML_NEW_PARAM(P3) p3, PML_NEW_PARAM(P4) p4) {
 
         PML_NEW_OPERATOR_IMPL((p0, p1, p2, p3, p4));
     }
@@ -369,24 +371,34 @@ struct DeleteResult {
         alloc(a), hint(h) {}
 
     template<typename T>
-    void operator()(T *ptr) {
-        PML_DEBUG_HOOK(DELETE, 1, 0, ptr, 0, alloc, hint);
+    void operator()(const T *p) {
+        /* `delete` can be used on const pointers, but `free()` takes only
+         * `void*`. For now, we'll just use `const_cast` to allow for this.
+         */
+        if(T *ptr = const_cast<T*>(p)) {
+            PML_DEBUG_HOOK(DELETE, 1, 0, ptr, 0, alloc, hint);
 #ifdef PML_CHECK_S
-        size_t count;
-        void *data = delete_n(ptr, count, false);
-        PML_CALL(free)(data, alloc, hint);
+            size_t count;
+            void *data = delete_n(ptr, count, false);
+            PML_CALL(free)(data, alloc, hint);
 #else/*PML_CHECK_S*/
-        ptr->~T();
-        PML_CALL(free)(ptr, alloc, hint);
+            ptr->~T();
+            PML_CALL(free)(ptr, alloc, hint);
 #endif/*PML_CHECK_S*/
+        }
     }
 
     template<typename T>
-    void operator[](T *ptr) {
-        size_t count;
-        void *data = delete_n(ptr, count);
-        PML_DEBUG_HOOK(DELETEA, count, 0, ptr, 0, alloc, hint);
-        PML_CALL(free)(data, alloc, hint);
+    void operator[](const T *p) {
+        /* `delete` can be used on const pointers, but `free()` takes only
+         * `void*`. For now, we'll just use `const_cast` to allow for this.
+         */
+        if(T *ptr = const_cast<T*>(p)) {
+            size_t count;
+            void *data = delete_n(ptr, count);
+            PML_DEBUG_HOOK(DELETEA, count, 0, ptr, 0, alloc, hint);
+            PML_CALL(free)(data, alloc, hint);
+        }
     }
 
 private:
