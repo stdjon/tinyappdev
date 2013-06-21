@@ -180,6 +180,15 @@
 #define PML_STRUCT(NAME_, DATA_) \
     struct PML_TYPE(NAME_) { DATA_ }
 
+/* Pass template args to (C++98) 'new' operators by const ref unless the switch
+ * PML_NEW_BY_VALUE_S is #defined.
+ */
+#ifdef PML_NEW_BY_VALUE
+#define PML_NEW_PARAM(NAME_) NAME_
+#else//PML_NEW_BY_VALUE
+#define PML_NEW_PARAM(NAME_) const NAME_&
+#endif//PML_NEW_BY_VALUE
+
 #else/*__cplusplus*/
 
 /* C specifics */

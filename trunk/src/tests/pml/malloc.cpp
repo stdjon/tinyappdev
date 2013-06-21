@@ -183,7 +183,7 @@ TFR_Bool test_new() {
 
     counters.reset();
 
-    Object *ptr = ::pml_new<Object>()(1024, 1, 2, 3, 4);
+    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5);
 
     if( ptr &&
         (1024 == counters.objects) &&
@@ -213,7 +213,7 @@ TFR_Bool test_new_8args() {
 
     counters.reset();
 
-    Object *ptr = ::pml_new<Object>()(1024, 1, 2, 3, 4, 5, 6, 7);
+    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5, 6, 7, 8);
 
     if( ptr &&
         (1024 == counters.objects) &&
