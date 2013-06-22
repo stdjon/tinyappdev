@@ -195,6 +195,44 @@ PML_INLINE_API(void, init_allocator)(
 /* Additional C++-only functionality */
 
 /*----------------------------------------------------------------------------*/
+/* PML_REGISTER_SET_ALLOCATOR() API */
+
+PML_BEGIN_NAMESPACE
+template<typename T>
+struct HasType { typedef void Type; };
+
+
+template<typename T, typename = void>
+struct SetAllocatorTagCheck {
+
+    static void call_set_allocator(T &t, Allocator *a) {}
+};
+
+
+template<typename T>
+struct SetAllocatorTagCheck<T,
+    typename HasType<typename T::SetAllocatorTag>::Type> {
+
+    static void call_set_allocator(T &t, Allocator *a) {
+        t.call_set_allocator_INTERNAL_(a);
+    }
+};
+PML_END_NAMESPACE
+
+
+/** This macro can be used to specify a public method which can be called on an
+ *  object to inform it of the allocator which was used to allocate it.
+ *  \note The method will be called _before_ the constructor, so it should not
+ *    do anything which relies on the object being constructed.
+ *
+ *  Macro itself should also go in the public section of the class definition.
+ */
+#define PML_REGISTER_SET_ALLOCATOR(NAME_) \
+    void call_set_allocator_INTERNAL_(::pml::Allocator *a) { NAME_(a); } \
+    typedef int SetAllocatorTag
+
+
+/*----------------------------------------------------------------------------*/
 /* Replacement for operator new (0-5 arguments currently supported in C++98).
  *
  * Single allocation:
@@ -218,7 +256,10 @@ PML_INLINE_API(void, init_allocator)(
     size_t size = sizeof(T); \
     void *ptr = PML_NEW_OPERATOR_ALLOC(); \
      \
-    if(ptr) { new(::PML_Q_TYPE(Placement)(ptr)) T ARGS_; } \
+    if(ptr) { \
+        SetAllocatorTagCheck<T>::call_set_allocator(*(T*)ptr, alloc); \
+        new(::PML_Q_TYPE(Placement)(ptr)) T ARGS_; \
+    } \
     PML_DEBUG_HOOK(NEW, 1, size, ptr, 0, alloc, hint); \
      \
     return static_cast<T*>(ptr)

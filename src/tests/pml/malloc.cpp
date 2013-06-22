@@ -353,6 +353,72 @@ TFR_Bool test_iallocator2() {
 }
 
 
+//------------------------------------------------------------------------------
+
+struct SetAllocatorTester {
+
+    SetAllocatorTester(::pml::Allocator *alloc):
+        m_data(0),
+        m_passed(false) {
+
+        if(m_alloc) {
+            // we don't need to rely on the ctor passing the alloc in: m_alloc
+            // is usable already.
+            m_data = pml_new<int>(m_alloc)[36];
+        }
+
+        m_passed = (alloc == m_alloc);
+    }
+
+    ~SetAllocatorTester() {
+        pml_delete(m_alloc)[m_data];
+    }
+
+    void destroy() {
+        pml_delete(m_alloc)(this);
+    }
+
+    bool passed() const { return m_passed; }
+    void *data() const { return m_data; }
+
+    void set_allocator(::pml::Allocator *alloc) { m_alloc = alloc; }
+    PML_REGISTER_SET_ALLOCATOR(set_allocator);
+
+private:
+    ::pml::Allocator *m_alloc;
+    int *m_data;
+    bool m_passed;
+};
+
+
+TFR_Bool test_set_allocator() {
+
+    TFR_Bool result = TFR_false;
+    MyAllocator s;
+
+    if(TFR_check(4, 0 == s.allocs)) {
+
+        // normally, you wouldn't pass the allocator into the ctor, but for
+        // testing, it allows us to check the allocator was set correctly.
+        SetAllocatorTester *sat = pml_new<SetAllocatorTester>(&s)(&s);
+
+        if(sat && TFR_check(4, 2 == s.allocs)) {
+            result =
+                TFR_check(3, sat->passed()) &&
+                TFR_check(3, sat->data());
+
+            sat->destroy();
+
+            result &= TFR_check(4, 0 == s.allocs);
+        }
+    }
+
+    return result;
+}
+
+
+//------------------------------------------------------------------------------
+
 void declare_pml_tests() {
 
     TFR_SUITE_DECLARE_M("pml::c++", pml_open, pml_close);
@@ -364,6 +430,7 @@ void declare_pml_tests() {
     TFR_SUITE_ADD_M(test_newa);
     TFR_SUITE_ADD_M(test_iallocator);
     TFR_SUITE_ADD_M(test_iallocator2);
+    TFR_SUITE_ADD_M(test_set_allocator);
 }
 
 
