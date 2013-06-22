@@ -12,8 +12,8 @@
 #     synthesize include/ by copying headers out of both src/ and obj/
 define emit_umbrella_rule
 obj/$1: src/$2/*.h
-	echo [GEN] Generating \'obj/$1\'
-	mkdir -p $(dir obj/$1)
+	$(ECHO) [GEN] Generating \'obj/$1\'
+	$(MKDIR) $(dir obj/$1)
 	make/make_umbrella.sh obj/$1 $2/*.h $3 $4
 endef
 

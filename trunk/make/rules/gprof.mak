@@ -17,9 +17,9 @@ gprof:
 profile_target=$(call bin_target,$(GPROF_))
 
 gprof-run: $(profile_target)
-	@echo Profiling \'$(profile_target)\'
+	@$(ECHO) Profiling \'$(profile_target)\'
 	@$(profile_target)
-	@echo Generating \'gprof.out\'
-	@gprof $(profile_target) > gprof.out
+	@$(ECHO) Generating \'gprof.out\'
+	@$(GPROF) $(profile_target) > gprof.out
 
 

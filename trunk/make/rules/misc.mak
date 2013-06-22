@@ -2,7 +2,7 @@
 # MISCELLANEOUS/UTILITY TARGETS
 
 # report word/line/character counts on the src directory
-do_wc=wc $(foreach pattern,$(2),`find $(1) -name "$(pattern)"`)
+do_wc=$(WC) $(foreach pattern,$(2),`find $(1) -name "$(pattern)"`)
 
 
 # Report on all source code (.mak is debatable...)
@@ -17,22 +17,12 @@ wc*:
 
 
 #-------------------------------------------------------------------------------
-# tagfile (requires that ctags is installed)
+# Show the value of make variables (for diagnostic purposes)
+# eg: make show:BIN_TARGETS
 
-tags:
-	ctags `find . -name *.[ch]`
-	cat $@ | grep -v \./include > $@~
-	mv $@~ $@
-
-
-#-------------------------------------------------------------------------------
-# Diagnosis: print name=value of make variables
-# eg: make diag D=BIN_TARGETS
-
-diag:
-	@echo
-	@echo $(D)=$($(D))
-	@echo
-
+show\:%:
+	@$(ECHO)
+	@$(ECHO) $(@:show:%=%)="$($(@:show:%=%))"
+	@$(ECHO)
 
 

@@ -183,7 +183,9 @@ WARNINGS_CFLAGS:=-Wall -Wextra \
 # Per-build type compile/link flags
 # -gdwarf-2 and -g3 flags together enable gcc to provide debug information about
 # macro definitions. (see gdb 'macro expand' command for more info...)
-SYMBOL_CFLAGS:=-gdwarf-2 -g3
+
+LINUX_SYMBOL_CFLAGS:=-gdwarf-2
+SYMBOL_CFLAGS:=$($(PLATFORM)_SYMBOL_CFLAGS) -g3
 
 # debug flags
 debug_CFLAGS:=$(SYMBOL_CFLAGS) -D_DEBUG -DDEBUG_S -DTRACE_S
@@ -229,7 +231,7 @@ endif
 
 ifeq ($(PLATFORM),WIN32)
 debug_CFLAGS+=-gstabs -DMEM_CALLSTACK_S
-debug_LFLAGS+=-lbfd -lintl -liberty -limagehlp #extra libs
+debug_LFLAGS+=-lbfd -liberty -limagehlp #extra libs #-lintl
 endif
 
 endif
@@ -363,4 +365,39 @@ lib_target=lib/$(TYPE)/$(LIBPRE)$(1)$(LIBEXT)
 pdf_target=doc/$(1).pdf
 
 
+#-------------------------------------------------------------------------------
+# TOOL DEFAULTS
+
+# Creating and deleting directories - 
+# we want to be able to create e.g. a/b/c, and have any/all directories in the
+# path created at once.
+MKDIR?=mkdir -p
+
+# We want to be able to delete a directory and any contents it may have
+# unconditionally.
+RMDIR?=rm -rf
+
+# Specify default gcc/g++ for C/C++ compilation/linking, but this should make it
+# easier for someone to use a custom replacement tool (e.g. gcc-compatible
+# compiler, or a custom built version...).
+GCC?=gcc
+G++?=g++
+AR?=ar
+
+# GDB(-compatible) debugger/profiler
+GDB?=gdb
+GPROF?=gprof
+
+# Used for fw docs build. v1.8 gives better looking docs, 1.7 will still work
+# though, at a pinch.
+DOXYGEN?=doxygen
+
+# misc tools (see misc.mak, etc)
+CAT?=cat
+CP?=cp
+ECHO?=echo
+GREP?=grep
+MV?=mv
+SED?=sed
+WC?=wc
 
