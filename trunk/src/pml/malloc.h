@@ -251,10 +251,10 @@ PML_END_NAMESPACE
  * place in the template functions, to avoid having to repeat the code. (This
  * does make it harder to debug though, so try to keep it simple...)
  */
-#define PML_NEW_OPERATOR_IMPL(ARGS_) \
+#define pml_NEW_OPERATOR_IMPL(ARGS_) \
      \
     size_t size = sizeof(T); \
-    void *ptr = PML_NEW_OPERATOR_ALLOC(); \
+    void *ptr = pml_NEW_OPERATOR_ALLOC(); \
      \
     if(ptr) { \
         SetAllocatorTagCheck<T>::call_set_allocator(*(T*)ptr, alloc); \
@@ -267,10 +267,10 @@ PML_END_NAMESPACE
 
 #ifdef PML_CHECK_S
 /* When check is enabled, we allocate an 'array' of 1 object */
-#define PML_NEW_OPERATOR_ALLOC() alloc_n(1, true)
+#define pml_NEW_OPERATOR_ALLOC() alloc_n(1, true)
 #else/*PML_CHECK_S*/
 /* No checking, just allocate space for one T. */
-#define PML_NEW_OPERATOR_ALLOC() PML_CALL(malloc)(size, alloc, hint)
+#define pml_NEW_OPERATOR_ALLOC() PML_CALL(malloc)(size, alloc, hint)
 #endif/*PML_CHECK_S*/
 
 
@@ -286,7 +286,7 @@ struct NewResult {
     /* variadic forwarding template operator() */
     template<typename... ARGS>
     T *operator()(ARGS &&...args) {
-        PML_NEW_OPERATOR_IMPL((std::forward<ARGS>(args)...));
+        pml_NEW_OPERATOR_IMPL((std::forward<ARGS>(args)...));
     }
 
 #else/*PML_HAS_CPP11*/
@@ -294,39 +294,39 @@ struct NewResult {
     /* old-style nonvaridiac template operator()s (0-5 args supported) */
     T *operator()() {
 
-        PML_NEW_OPERATOR_IMPL(());
+        pml_NEW_OPERATOR_IMPL(());
     }
 
     template<typename P0>
     T *operator()(PML_NEW_PARAM(P0) p0) {
 
-        PML_NEW_OPERATOR_IMPL((p0));
+        pml_NEW_OPERATOR_IMPL((p0));
     }
 
     template<typename P0, typename P1>
     T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1) {
 
-        PML_NEW_OPERATOR_IMPL((p0, p1));
+        pml_NEW_OPERATOR_IMPL((p0, p1));
     }
 
     template<typename P0, typename P1, typename P2>
     T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1, PML_NEW_PARAM(P2) p2) {
 
-        PML_NEW_OPERATOR_IMPL((p0, p1, p2));
+        pml_NEW_OPERATOR_IMPL((p0, p1, p2));
     }
 
     template<typename P0, typename P1, typename P2, typename P3>
     T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1,
         PML_NEW_PARAM(P2) p2, PML_NEW_PARAM(P3) p3) {
 
-        PML_NEW_OPERATOR_IMPL((p0, p1, p2, p3));
+        pml_NEW_OPERATOR_IMPL((p0, p1, p2, p3));
     }
 
     template<typename P0, typename P1, typename P2, typename P3, typename P4>
     T *operator()(PML_NEW_PARAM(P0) p0, PML_NEW_PARAM(P1) p1,
         PML_NEW_PARAM(P2) p2, PML_NEW_PARAM(P3) p3, PML_NEW_PARAM(P4) p4) {
 
-        PML_NEW_OPERATOR_IMPL((p0, p1, p2, p3, p4));
+        pml_NEW_OPERATOR_IMPL((p0, p1, p2, p3, p4));
     }
 
 #endif/*PML_HAS_CPP11*/
