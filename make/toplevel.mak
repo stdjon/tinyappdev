@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------
 # Top level makefile implementation details
-#
+
 
 # List of targets which clean the project. These have a reduced set of dependency
 # information, among other differences.
@@ -19,6 +19,15 @@ CLEAN_TARGETS:= \
 	wc* \
 	tags \
 # CLEAN_TARGETS
+
+
+# List of targets for doc builds (TODO: ideally, we wouldn't need to specify
+# these here, just in the target.mak files).
+
+DOC_TARGETS:= \
+	docs \
+	clean-docs \
+# DOC_TARGETS
 
 
 #-------------------------------------------------------------------------------
@@ -64,7 +73,7 @@ endif
 # $1 - target to make (probably $@)
 # $2 - optional commandline args
 define do_make
-	@echo Making \'$1\'... && $(_prefix) $(MAKE) -r $(_silent) -f make/main.mak $1 $2
+	@$(ECHO) Making \'$1\'... && $(_prefix) $(MAKE) -r $(_silent) -f make/main.mak $1 $2
 endef
 
 
@@ -74,6 +83,16 @@ define do_clean
 	$(call do_make,$1,CLEAN=1)
 endef
 
+
+# Make a documenation target
+# $1 - target to make (probably $@)
+define do_docs
+	$(call do_make,$1,DOCS=1)
+endef
+
+
+#-------------------------------------------------------------------------------
+# Emit additional rules (clean/docs targets)
 
 # Expand to a rule for a clean target (expand a rule which has $(do_clean) as
 # the rule body.
@@ -91,6 +110,22 @@ define emit_clean_targets
 endef
 
 
+# Expand to a rule for a docs target (expand a rule which has $(do_docs) as
+# the rule body.
+# $1 - name of the docs target
+define emit_docs_target
+$1:
+	$(call do_docs,$1)
+endef
+
+
+# Create rules for each of CLEAN_TARGETS above, using $(eval) to interpret the
+# results as make syntax.
+define emit_docs_targets
+	$(foreach trg,$(DOCS_TARGETS),$(eval $(call emit_docs_target,$(trg))))
+endef
+
+
 #-------------------------------------------------------------------------------
 # Targets
 
@@ -102,10 +137,14 @@ all:
 $(emit_clean_targets)
 
 
+# call emit_docs_targets, which will expand the rules for docs targets
+$(emit_docs_targets)
+
+
 # default build rule - used by anything which isn't listed above
 %::
 	$(call do_make,$@)
-	@echo Finished
+	@$(ECHO) Finished
 
 
 # This rule "makes" the optional header userconf.mak, allowing the build to

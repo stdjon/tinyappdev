@@ -12,7 +12,7 @@ SOURCE_DIRS:=$(sort $(dir $(INPUT_TARGETS)))
 1P_SOURCE_DIRS:=$(filter src/%, $(SOURCE_DIRS))
 
 
-# local functions for cleaning (provide directory lists for passing to rm)
+# local functions for cleaning (provide directory lists for passing to $(RMDIR))
 
 clean_src_dirs=$(call sourcesubst,obj/%,$(1))
 clean_obj_dirs=$(call sourcesubst,obj/$(TYPE)/%,$(1))
@@ -31,26 +31,26 @@ rinse: clean-src clean-include rinse-dep rinse-obj
 
 
 clean-dep:
-	rm -rf $(call clean_dep_dirs, $(1P_SOURCE_DIRS))
+	$(RMDIR) $(call clean_dep_dirs, $(1P_SOURCE_DIRS))
 
 clean-obj:
-	rm -rf $(call clean_obj_dirs, $(1P_SOURCE_DIRS))
+	$(RMDIR) $(call clean_obj_dirs, $(1P_SOURCE_DIRS))
 
 clean-src:
-	rm -rf $(call clean_src_dirs, $(1P_SOURCE_DIRS))
+	$(RMDIR) $(call clean_src_dirs, $(1P_SOURCE_DIRS))
 
 clean-include:
-	rm -rf include
+	$(RMDIR) include
 
 
 rinse-dep:
-	rm -rf $(call clean_dep_dirs, $(SOURCE_DIRS))
+	$(RMDIR) $(call clean_dep_dirs, $(SOURCE_DIRS))
 
 rinse-obj:
-	rm -rf $(call clean_obj_dirs, $(SOURCE_DIRS))
+	$(RMDIR) $(call clean_obj_dirs, $(SOURCE_DIRS))
 
 
 distclean:
-	rm -rf bin dep doc lib obj html include
+	$(RMDIR) bin dep doc lib obj html include
 
 
