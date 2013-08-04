@@ -183,7 +183,7 @@ TFR_Bool test_new() {
 
     counters.reset();
 
-    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5);
+    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5); // new Object(1024, 2, 3, 4, 5);
 
     if( ptr &&
         (1024 == counters.objects) &&
@@ -191,19 +191,66 @@ TFR_Bool test_new() {
         (1 == counters.mallocs) &&
         (1 == counters.hook_allocs) ) {
 
-        ::pml_delete()(ptr);
+        ::pml_delete()(ptr); // delete ptr;
 
         if( (1023 == counters.objects) &&
             (1 == counters.deletes) &&
             (1 == counters.frees) &&
             (1 == counters.hook_frees) ) {
 
-            result = true;
+            Object *ptr = ::pml_new<Object>()(); // new Object();
+
+            if( ptr &&
+                (1024 == counters.objects) &&
+                (2 == counters.news) &&
+                (2 == counters.mallocs) &&
+                (2 == counters.hook_allocs) ) {
+
+                ::pml_delete()(ptr); // delete ptr;
+
+                if( (1023 == counters.objects) &&
+                    (2 == counters.deletes) &&
+                    (2 == counters.frees) &&
+                    (2 == counters.hook_frees) ) {
+
+                    result = true;
+                }
+            }
         }
     }
 
     return result;
 }
+
+
+#ifdef PML_EMPTY_NEW_S
+TFR_Bool test_empty_new() {
+
+    counters.reset();
+
+    const Object *ptr = ::pml_new<Object>(); // new Object;
+
+    if( ptr &&
+        (1 == counters.objects) &&
+        (1 == counters.news) &&
+        (1 == counters.mallocs) &&
+        (1 == counters.hook_allocs) ) {
+
+        ::pml_delete()(ptr); // delete ptr;
+
+        if( (0 == counters.objects) &&
+            (1 == counters.deletes) &&
+            (1 == counters.frees) &&
+            (1 == counters.hook_frees) ) {
+
+            return TFR_true;
+        }
+    }
+
+    return TFR_false;
+}
+#endif//PML_EMPTY_NEW_S
+
 
 
 #ifdef PML_HAS_CPP11
@@ -213,7 +260,7 @@ TFR_Bool test_new_8args() {
 
     counters.reset();
 
-    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5, 6, 7, 8);
+    Object *ptr = ::pml_new<Object>()(1024, 2, 3, 4, 5, 6, 7, 8); // new Object(1024, 2, 3, 4, 5, 6, 7, 8);
 
     if( ptr &&
         (1024 == counters.objects) &&
@@ -221,7 +268,7 @@ TFR_Bool test_new_8args() {
         (1 == counters.mallocs) &&
         (1 == counters.hook_allocs) ) {
 
-        ::pml_delete()(ptr);
+        ::pml_delete()(ptr); // delete ptr;
 
         if( (1023 == counters.objects) &&
             (1 == counters.deletes) &&
@@ -245,7 +292,7 @@ TFR_Bool test_newa() {
 
     counters.reset();
 
-    Object *ptr = ::pml_new<Object>()[24];
+    Object *ptr = ::pml_newa<Object>(24); // new Object[24];
 
     if( ptr &&
         (24 == counters.objects) &&
@@ -253,7 +300,36 @@ TFR_Bool test_newa() {
         (1 == counters.mallocs) &&
         (1 == counters.hook_allocs) ) {
 
-        ::pml_delete()[ptr];
+        ::pml_deletea(ptr); // delete[] ptr
+
+        if( (0 == counters.objects) &&
+            (1 == counters.deleteas) &&
+            (1 == counters.frees) &&
+            (1 == counters.frees) ) {
+
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+
+TFR_Bool test_new_array() {
+
+    bool result = false;
+
+    counters.reset();
+
+    Object *ptr = ::pml_new<Object>()[24]; // new Object[24];
+
+    if( ptr &&
+        (24 == counters.objects) &&
+        (1 == counters.newas) &&
+        (1 == counters.mallocs) &&
+        (1 == counters.hook_allocs) ) {
+
+        ::pml_delete()[ptr]; // delete[] ptr;
 
         if( (0 == counters.objects) &&
             (1 == counters.deleteas) &&
@@ -321,24 +397,24 @@ TFR_Bool test_iallocator2() {
     MyAllocator s;
 
     if(TFR_check(4, 0 == s.allocs)) {
-        Object *o = pml_new<Object>(&s)(100, 2, 3, 4, 5);
+        Object *o = pml_new<Object>(&s)(100, 2, 3, 4, 5); // new Object(100, 2, 3, 4, 5);
 
         if( TFR_check(4, 1 == s.allocs) &&
             TFR_check(4, 100 == counters.objects) ) {
 
-            pml_delete(&s)(o);
+            pml_delete(&s)(o); // delete o;
 
             if( TFR_check(4, 0 == s.allocs) &&
                 TFR_check(4, 99 == counters.objects) ) {
 
                 counters.reset();
 
-                o = pml_new<Object>(&s)[100];
+                o = pml_new<Object>(&s)[100]; // new Object[100];
 
                 if( TFR_check(4, 1 == s.allocs) &&
                     TFR_check(4, 100 == counters.objects) ) {
 
-                    pml_delete(&s)[o];
+                    pml_delete(&s)[o]; // delete[] o;
 
                     if( TFR_check(4, 0 == s.allocs) &&
                         TFR_check(4, 0 == counters.objects) ) {
@@ -357,6 +433,9 @@ TFR_Bool test_iallocator2() {
 
 struct SetAllocatorTester {
 
+    // Passing in alloc so we can check that it's the same as m_alloc. Normally,
+    // you (probably) wouldn't pass alloc to the ctor when using a mechanism like
+    // PML_REGISTER_SET_ALLOCATOR().
     SetAllocatorTester(::pml::Allocator *alloc):
         m_data(0),
         m_passed(false) {
@@ -364,18 +443,18 @@ struct SetAllocatorTester {
         if(m_alloc) {
             // we don't need to rely on the ctor passing the alloc in: m_alloc
             // is usable already.
-            m_data = pml_new<int>(m_alloc)[36];
+            m_data = pml_new<int>(m_alloc)[36]; // new int[36];
         }
 
         m_passed = (alloc == m_alloc);
     }
 
     ~SetAllocatorTester() {
-        pml_delete(m_alloc)[m_data];
+        pml_delete(m_alloc)[m_data]; // delete[] m_data;
     }
 
     void destroy() {
-        pml_delete(m_alloc)(this);
+        pml_delete(m_alloc)(this); // delete this;
     }
 
     bool passed() const { return m_passed; }
@@ -400,7 +479,7 @@ TFR_Bool test_set_allocator() {
 
         // normally, you wouldn't pass the allocator into the ctor, but for
         // testing, it allows us to check the allocator was set correctly.
-        SetAllocatorTester *sat = pml_new<SetAllocatorTester>(&s)(&s);
+        SetAllocatorTester *sat = pml_new<SetAllocatorTester>(&s)(&s); // new SetAllocatorTester(&s)
 
         if(sat && TFR_check(4, 2 == s.allocs)) {
             result =
@@ -424,10 +503,14 @@ void declare_pml_tests() {
     TFR_SUITE_DECLARE_M("pml::c++", pml_open, pml_close);
     TFR_SUITE_ADD_M(test_malloc);
     TFR_SUITE_ADD_M(test_new);
+#ifdef PML_EMPTY_NEW_S
+    TFR_SUITE_ADD_M(test_empty_new);
+#endif//PML_EMPTY_NEW_S
 #ifdef PML_HAS_CPP11
     TFR_SUITE_ADD_M(test_new_8args);
 #endif//PML_HAS_CPP11
     TFR_SUITE_ADD_M(test_newa);
+    TFR_SUITE_ADD_M(test_new_array);
     TFR_SUITE_ADD_M(test_iallocator);
     TFR_SUITE_ADD_M(test_iallocator2);
     TFR_SUITE_ADD_M(test_set_allocator);

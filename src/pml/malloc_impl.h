@@ -83,6 +83,17 @@
 #endif/*PML_NO_CHECK_S*/
 #endif/*PML_CHECK_S*/
 
+/* Enable empty `pml_new()` (unless PML_NO_EMPTY_NEW_S is defined)
+ * Implicit conversion of pml::NewResult<T> -> T* in:
+ *
+ *      Object *ptr = pml_new<Object>(); // equiv. to new Object;
+ */
+#ifndef PML_EMPTY_NEW_S
+#ifndef PML_NO_EMPTY_NEW_S
+#define PML_EMPTY_NEW_S
+#endif/*PML_NO_EMPTY_NEW_S*/
+#endif/*PML_EMPTY_NEW_S*/
+
 
 /*----------------------------------------------------------------------------*/
 /* API namespace - contains every type and enum value in C++
