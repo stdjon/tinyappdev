@@ -6,9 +6,8 @@
  *
  *  Provides a set of C and C++ memory routines with equivalent functionality to
  *  malloc()/free(), calloc(), realloc(), new/delete and new[]/delete[]. Any
- *  allocations/frees can be routed to user routines using the hook routines,
- *  there is also the possibility to install a debug hook as well for tracing/
- *  monitoring puposes.
+ *  allocations/frees can be routed to user code using hook parameters, there is
+ *  also the possibility to install a debug hook for tracing/monitoring puposes.
  */
 
 #include "pml/malloc_impl.h" /* implementation details */
@@ -57,8 +56,8 @@ PML_STRUCT(
     PML_TYPE(DebugHookType) type; /**< Hook type. */
     size_t count; /** Number of objects (de)allocated. */
     size_t size; /** Size of allocation */
-    void *ptr; /**  */
-    void *in; /** Pointer to memory (free/realloc) */
+    void *ptr; /** Alloc pointer (malloc/calloc/realloc) */
+    void *in; /** Free pointer (free/realloc) */
     PML_TYPE(Allocator) *alloc; /** Allocator. */
     PML_TYPE(Hint) hint; /** Hint. */
 );
@@ -236,14 +235,19 @@ PML_END_NAMESPACE
 /* Replacement for operator new (0-5 arguments currently supported in C++98).
  *
  * Single allocation:
- *     pml_new<T>(...)() --> new T / new T() 
- *     pml_new<T>(...)(a) --> new T(a) 
- *     pml_new<T>(...)(a, b) --> new T(a, b) 
+ *     pml_new<T>(...) --> new T       (++)
+ *     pml_new<T>(...)() --> new T()
+ *     pml_new<T>(...)(a) --> new T(a)
+ *     pml_new<T>(...)(a, b) --> new T(a, b)
  *     ...
  *     pml_new<T>(...)(a, b, c, d, e) --> new T(a, b, c, d, e)
  *
  * Array allocation:
  *     pml_new<T>(...)[n] --> new T[n] 
+ *
+ * (++) This syntax can be removed by #define PML_NO_EMPTY_NEW_S. This makes it
+ *      an error if pml_new<T>() is not followed by () or [], i.e. you must then
+ *      specify a default-initialized object explicitly, it is not the default.
  */
 
 
@@ -257,7 +261,7 @@ PML_END_NAMESPACE
     void *ptr = pml_NEW_OPERATOR_ALLOC(); \
      \
     if(ptr) { \
-        SetAllocatorTagCheck<T>::call_set_allocator(*(T*)ptr, alloc); \
+        SetAllocatorTagCheck<T>::call_set_allocator(*static_cast<T*>(ptr), alloc); \
         new(::PML_Q_TYPE(Placement)(ptr)) T ARGS_; \
     } \
     PML_DEBUG_HOOK(NEW, 1, size, ptr, 0, alloc, hint); \
@@ -275,11 +279,29 @@ PML_END_NAMESPACE
 
 
 PML_BEGIN_NAMESPACE
+/** `pml_new()` result.
+ *  This is the result value of a call to `pml_new()`. It supports two further
+ *  operators, () and []. () takes any* arguments, and is used to construct a
+ *  single instance of an object. [] takes a count parameter, and allocates an
+ *  array of objects.
+ *
+ *
+ *  (*) up to 5 args in C++98
+ */
 template<typename T>
 struct NewResult {
 
     NewResult(PML_Q_TYPE(Allocator) *a, PML_Q_TYPE(Hint) h):
         alloc(a), hint(h) {}
+
+#ifdef PML_EMPTY_NEW_S
+    /* This allows 'parameterless' pml_new by allowing it to decay into a T* by
+     * allocating and default initializing an object.
+     */
+    operator T*() {
+        pml_NEW_OPERATOR_IMPL(());
+    }
+#endif//PML_EMPTY_NEW_S
 
 #ifdef PML_HAS_CPP11
 
@@ -395,6 +417,31 @@ inline PML_Q_TYPE(NewResult)<T> pml_new(PML_Q_TYPE(Hint) hint) {
 }
 
 
+/** pml_newa(count, [alloc], [hint])
+ *  Offers a less 'weird' syntax to allocate arrays than the standard pml_new().
+ *  pml_new() for a single instance still needs a separate argument list for the
+ *  constructor, so it always needs an additional argument list.
+ *  This is equivalent to:
+ *      pml_newa<T>(100)    ->    new T[100]
+ *      pml_newa<T>(100)    ->    pml_new<T>()[100]
+ *      pml_newa<T>(100, alloc)    ->    pml_new<T>(alloc)[100]
+ *      pml_newa<T>(100, a, h)    ->    pml_new<T>(a, h)[100]
+ */
+template<typename T>
+inline T *pml_newa(size_t count = 0,
+    PML_Q_TYPE(Allocator) *alloc = 0, PML_Q_TYPE(Hint) hint = 0) {
+
+    return PML_Q_TYPE(NewResult)<T>(alloc, hint)[count];
+}
+
+
+template<typename T>
+inline T *pml_newa(size_t count, PML_Q_TYPE(Hint) hint) {
+
+    return PML_Q_TYPE(NewResult)<T>(0, hint)[count];
+}
+
+
 /*----------------------------------------------------------------------------*/
 /** Delete replacement:
  *
@@ -406,6 +453,14 @@ inline PML_Q_TYPE(NewResult)<T> pml_new(PML_Q_TYPE(Hint) hint) {
  */
 
 PML_BEGIN_NAMESPACE
+/** `pml_delete()` result.
+ *  This is the result value of a call to `pml_delete()`. It supports two further
+ *  operators, () and []. Both of these take a pointer as argument, () destroys
+ *  and frees a single instance, whereas [] uninitializes and deallocates an
+ *  array of objects.
+ *
+ *  (*) up to 5 args in C++98
+ */
 struct DeleteResult {
 
     DeleteResult(PML_Q_TYPE(Allocator) *a, PML_Q_TYPE(Hint) h):
@@ -482,7 +537,31 @@ inline PML_Q_TYPE(DeleteResult) pml_delete(
 
 
 inline PML_Q_TYPE(DeleteResult) pml_delete(PML_Q_TYPE(Hint) hint) {
+
     return PML_Q_TYPE(DeleteResult)(0, hint);
+}
+
+
+/** pml_deletea(ptr, [alloc], [hint])
+ *  Offers a less 'weird' syntax to free arrays than the standard pml_delete().
+ *  This is equivalent to:
+ *      pml_deletea(ptr)    ->    delete[] ptr
+ *      pml_deletea(ptr)    ->    pml_delete()[ptr]
+ *      pml_deletea<T>(ptr, alloc)    ->    pml_delete<T>(alloc)[ptr]
+ *      pml_deletea<T>(ptr, a, h)    ->    pml_delete<T>(a, h)[ptr]
+ */
+template<typename T>
+inline void pml_deletea(
+    const T *ptr, PML_Q_TYPE(Allocator) *alloc = 0, PML_Q_TYPE(Hint) hint = 0) {
+
+    PML_Q_TYPE(DeleteResult)(alloc, hint)[ptr];
+}
+
+
+template<typename T>
+inline void pml_deletea(const T *ptr, PML_Q_TYPE(Hint) hint) {
+
+    PML_Q_TYPE(DeleteResult)(0, hint)[ptr];
 }
 
 
